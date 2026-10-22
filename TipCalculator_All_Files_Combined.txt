@@ -1,0 +1,545 @@
+================================================================================
+TIP CALCULATOR â€” ALL PROJECT FILES COMBINED INTO ONE FILE
+Generated: 10/22/2026 10:17:43
+================================================================================
+TABLE OF CONTENTS:
+1. README.md
+2. TipCalculatorController.java
+3. TipCalculator.fxml
+4. TipCalculatorApp.java
+5. TipCalculatorLauncher.java
+6. TipCalculatorSwingApp.java (Standalone Universal GUI - No dependencies)
+7. run.bat (Windows 1-Click Launcher)
+================================================================================
+
+
+================================================================================
+FILE 1 / 7: README.md
+================================================================================
+# Tip Calculator â€” Runnable Java Desktop Application
+
+A modern, responsive desktop bill & tip calculator built with **JavaFX** and declarative **FXML** layout (with an included universal **Java Swing** fallback).
+
+---
+
+## ðŸš€ Quick Start (Running the Application)
+
+### Option 1: 1-Click Launch (Recommended)
+Double-click `run.bat`.
+- Automatically launches the JavaFX graphical interface.
+- Includes automatic fallback to the zero-dependency Swing GUI if required.
+
+### Option 2: Dedicated Launchers
+- **JavaFX Version**: Run `run_javafx.bat`
+- **Universal Swing Version**: Run `run_swing.bat` (works on any standard Java 8+ installation without external modules)
+
+### Option 3: Command Line
+```powershell
+# Run JavaFX version with bundled modules:
+java --module-path lib --add-modules javafx.controls,javafx.fxml -jar TipCalculator.jar
+
+# Run Universal Swing version:
+java -cp TipCalculator.jar tipcalculator.TipCalculatorSwingApp
+```
+
+---
+
+## ðŸ§® Calculation Formulas
+
+- **Tip Amount** = `Bill Amount Ã— (Tip Percentage / 100)`
+- **Total Bill** = `Bill Amount + Tip Amount`
+- **Per Person Share** = `Total Bill / Number of People`
+
+---
+
+## ðŸ“ Package Contents
+
+```
+TipCalculatorRunnable/
+â”‚
+â”œâ”€â”€ TipCalculator.jar              # Precompiled executable JAR
+â”œâ”€â”€ run.bat                        # Primary 1-click launcher script
+â”œâ”€â”€ run_javafx.bat                 # Direct JavaFX launcher
+â”œâ”€â”€ run_swing.bat                  # Zero-dependency Swing launcher
+â”œâ”€â”€ TipCalculator_GUI_Preview.png  # Visual preview of the application
+â”œâ”€â”€ README.md                      # Documentation & instructions
+â”‚
+â”œâ”€â”€ lib/                           # OpenJFX 21 runtime libraries
+â”‚   â”œâ”€â”€ javafx-base-21.0.2.jar
+â”‚   â”œâ”€â”€ javafx-base-21.0.2-win.jar
+â”‚   â”œâ”€â”€ javafx-controls-21.0.2.jar
+â”‚   â”œâ”€â”€ javafx-controls-21.0.2-win.jar
+â”‚   â”œâ”€â”€ javafx-fxml-21.0.2.jar
+â”‚   â”œâ”€â”€ javafx-fxml-21.0.2-win.jar
+â”‚   â”œâ”€â”€ javafx-graphics-21.0.2.jar
+â”‚   â””â”€â”€ javafx-graphics-21.0.2-win.jar
+â”‚
+â””â”€â”€ src/tipcalculator/             # Full source code
+    â”œâ”€â”€ TipCalculatorApp.java      # JavaFX Application entrypoint
+    â”œâ”€â”€ TipCalculatorController.java# FXML event controller & validator
+    â”œâ”€â”€ TipCalculatorLauncher.java # JAR launcher (Application wrapper)
+    â”œâ”€â”€ TipCalculatorSwingApp.java # Standalone Swing fallback GUI
+    â””â”€â”€ TipCalculator.fxml         # Declarative UI markup
+```
+
+---
+
+## ðŸ›  Recompiling from Source
+
+If you modify the source code, you can recompile using:
+```powershell
+# Compile JavaFX classes:
+javac --module-path lib --add-modules javafx.controls,javafx.fxml -d bin src/tipcalculator/*.java
+
+# Copy FXML resource:
+Copy-Item src/tipcalculator/TipCalculator.fxml bin/tipcalculator/
+
+# Package into JAR:
+jar --create --file TipCalculator.jar --main-class tipcalculator.TipCalculatorLauncher -C bin .
+```
+
+
+
+================================================================================
+FILE 2 / 7: src/tipcalculator/TipCalculatorController.java
+================================================================================
+package tipcalculator;
+
+import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+
+public class TipCalculatorController {
+    @FXML private TextField billField;
+    @FXML private TextField peopleField;
+    @FXML private ComboBox<Integer> tipCombo;
+    @FXML private Button calculateButton;
+    @FXML private Label tipResult;
+    @FXML private Label totalResult;
+    @FXML private Label perPersonResult;
+    @FXML private Label messageLabel;
+
+    @FXML
+    private void initialize() {
+        tipCombo.getItems().addAll(5, 10, 15, 18, 20, 25);
+        tipCombo.setValue(15);
+        peopleField.setText("1");
+        calculateButton.setOnAction(event -> calculateTip());
+    }
+
+    private void calculateTip() {
+        try {
+            String billText = billField.getText() != null ? billField.getText().trim() : "";
+            String peopleText = peopleField.getText() != null ? peopleField.getText().trim() : "";
+
+            if (billText.isEmpty() || peopleText.isEmpty()) {
+                messageLabel.setText("Please enter both bill amount and number of people.");
+                return;
+            }
+
+            double bill = Double.parseDouble(billText);
+            int people = Integer.parseInt(peopleText);
+            Integer percentage = tipCombo.getValue();
+
+            if (!Double.isFinite(bill) || bill < 0) {
+                messageLabel.setText("Please enter a valid positive bill amount.");
+                return;
+            }
+
+            if (people < 1) {
+                messageLabel.setText("Number of people must be at least 1.");
+                return;
+            }
+
+            if (percentage == null) {
+                messageLabel.setText("Please choose a tip percentage.");
+                return;
+            }
+
+            double tip = bill * percentage / 100.0;
+            double total = bill + tip;
+            double perPerson = total / people;
+
+            tipResult.setText(String.format("Tip: \u20B9%.2f", tip));
+            totalResult.setText(String.format("Total bill: \u20B9%.2f", total));
+            perPersonResult.setText(String.format("Each person pays: \u20B9%.2f", perPerson));
+            messageLabel.setText("");
+        } catch (NumberFormatException ex) {
+            messageLabel.setText("Please enter valid numbers in the bill and people fields.");
+        }
+    }
+}
+
+
+
+================================================================================
+FILE 3 / 7: src/tipcalculator/TipCalculator.fxml
+================================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="tipcalculator.TipCalculatorController"
+      alignment="CENTER"
+      spacing="14"
+      prefWidth="480" prefHeight="620"
+      style="-fx-background-color: #f4f7fb; -fx-font-family: 'Segoe UI', Arial, sans-serif;">
+    <padding>
+        <Insets top="28" right="32" bottom="28" left="32"/>
+    </padding>
+
+    <Label text="Tip Calculator"
+           style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #1d4ed8;"/>
+    <Label text="Split the bill easily"
+           style="-fx-font-size: 14px; -fx-text-fill: #64748b;"/>
+
+    <Label text="Bill Amount (â‚¹)" maxWidth="Infinity"
+           style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #1e293b;"/>
+    <TextField fx:id="billField" promptText="Enter bill amount (e.g. 1000)"
+               style="-fx-font-size: 14px; -fx-padding: 8px 12px; -fx-background-radius: 6px; -fx-border-color: #cbd5e1; -fx-border-radius: 6px;"/>
+
+    <Label text="Tip Percentage" maxWidth="Infinity"
+           style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #1e293b;"/>
+    <ComboBox fx:id="tipCombo" promptText="Choose tip percentage" maxWidth="Infinity"
+              style="-fx-font-size: 14px; -fx-padding: 4px; -fx-background-radius: 6px; -fx-border-color: #cbd5e1; -fx-border-radius: 6px;"/>
+
+    <Label text="Number of People" maxWidth="Infinity"
+           style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #1e293b;"/>
+    <TextField fx:id="peopleField" promptText="Enter number of people (e.g. 2)"
+               style="-fx-font-size: 14px; -fx-padding: 8px 12px; -fx-background-radius: 6px; -fx-border-color: #cbd5e1; -fx-border-radius: 6px;"/>
+
+    <Button fx:id="calculateButton" text="Calculate" maxWidth="Infinity"
+            style="-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12px; -fx-background-radius: 8px; -fx-cursor: hand;"/>
+
+    <VBox spacing="6" alignment="CENTER_LEFT"
+          style="-fx-background-color: #eff6ff; -fx-padding: 16px; -fx-background-radius: 8px; -fx-border-color: #bfdbfe; -fx-border-radius: 8px;">
+        <Label fx:id="tipResult" text="Tip: â‚¹0.00"
+               style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1d4ed8;"/>
+        <Label fx:id="totalResult" text="Total bill: â‚¹0.00"
+               style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1e3a8a;"/>
+        <Label fx:id="perPersonResult" text="Each person pays: â‚¹0.00"
+               style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1e3a8a;"/>
+    </VBox>
+
+    <Label fx:id="messageLabel" text=""
+           wrapText="true"
+           style="-fx-font-size: 13px; -fx-text-fill: #dc2626; -fx-font-weight: 500;"/>
+</VBox>
+
+
+
+================================================================================
+FILE 4 / 7: src/tipcalculator/TipCalculatorApp.java
+================================================================================
+package tipcalculator;
+
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+
+public class TipCalculatorApp extends Application {
+    @Override
+    public void start(Stage primaryStage) {
+        try {
+            java.net.URL fxmlUrl = getClass().getResource("/tipcalculator/TipCalculator.fxml");
+            if (fxmlUrl == null) {
+                fxmlUrl = getClass().getResource("TipCalculator.fxml");
+            }
+            if (fxmlUrl == null) {
+                throw new RuntimeException("Could not locate TipCalculator.fxml resource file.");
+            }
+
+            Parent root = FXMLLoader.load(fxmlUrl);
+            Scene scene = new Scene(root, 480, 620);
+
+            primaryStage.setTitle("Tip Calculator â€” JavaFX");
+            primaryStage.setScene(scene);
+            primaryStage.setResizable(false);
+            primaryStage.centerOnScreen();
+            primaryStage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Failed to launch JavaFX UI: " + e.getMessage());
+        }
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+}
+
+
+
+================================================================================
+FILE 5 / 7: src/tipcalculator/TipCalculatorLauncher.java
+================================================================================
+package tipcalculator;
+
+/**
+ * Launcher class that does not extend javafx.application.Application.
+ * This avoids the JavaFX runtime components missing error when launching from an executable JAR.
+ */
+public class TipCalculatorLauncher {
+    public static void main(String[] args) {
+        TipCalculatorApp.main(args);
+    }
+}
+
+
+
+================================================================================
+FILE 6 / 7: src/tipcalculator/TipCalculatorSwingApp.java
+================================================================================
+package tipcalculator;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+
+public class TipCalculatorSwingApp extends JFrame {
+    private JTextField billField;
+    private JTextField peopleField;
+    private JComboBox<String> tipCombo;
+    private JLabel tipResult;
+    private JLabel totalResult;
+    private JLabel perPersonResult;
+    private JLabel messageLabel;
+
+    public TipCalculatorSwingApp() {
+        setTitle("Tip Calculator");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(460, 620);
+        setLocationRelativeTo(null);
+        setResizable(false);
+        getContentPane().setBackground(new Color(244, 247, 251));
+        setLayout(new BorderLayout());
+
+        // Header Panel
+        JPanel headerPanel = new JPanel();
+        headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
+        headerPanel.setBackground(new Color(29, 78, 216));
+        headerPanel.setBorder(new EmptyBorder(26, 24, 26, 24));
+
+        JLabel titleLabel = new JLabel("Tip Calculator");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel subtitleLabel = new JLabel("Split the bill easily");
+        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitleLabel.setForeground(new Color(224, 231, 255));
+        subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        headerPanel.add(titleLabel);
+        headerPanel.add(Box.createRigidArea(new Dimension(0, 6)));
+        headerPanel.add(subtitleLabel);
+        add(headerPanel, BorderLayout.NORTH);
+
+        // Body Panel
+        JPanel bodyPanel = new JPanel();
+        bodyPanel.setLayout(new BoxLayout(bodyPanel, BoxLayout.Y_AXIS));
+        bodyPanel.setBackground(new Color(244, 247, 251));
+        bodyPanel.setBorder(new EmptyBorder(20, 32, 24, 32));
+
+        // Bill Amount
+        bodyPanel.add(createFieldLabel("Bill Amount (\u20B9)"));
+        bodyPanel.add(Box.createRigidArea(new Dimension(0, 6)));
+        billField = new JTextField("1000.00");
+        styleTextField(billField);
+        bodyPanel.add(billField);
+        bodyPanel.add(Box.createRigidArea(new Dimension(0, 14)));
+
+        // Tip Percentage
+        bodyPanel.add(createFieldLabel("Tip Percentage"));
+        bodyPanel.add(Box.createRigidArea(new Dimension(0, 6)));
+        String[] tipOptions = {"5%", "10%", "15%", "18%", "20%", "25%"};
+        tipCombo = new JComboBox<>(tipOptions);
+        tipCombo.setSelectedItem("15%");
+        tipCombo.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        tipCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        tipCombo.setPreferredSize(new Dimension(380, 40));
+        tipCombo.setBackground(Color.WHITE);
+        bodyPanel.add(tipCombo);
+        bodyPanel.add(Box.createRigidArea(new Dimension(0, 14)));
+
+        // Number of People
+        bodyPanel.add(createFieldLabel("Number of People"));
+        bodyPanel.add(Box.createRigidArea(new Dimension(0, 6)));
+        peopleField = new JTextField("2");
+        styleTextField(peopleField);
+        bodyPanel.add(peopleField);
+        bodyPanel.add(Box.createRigidArea(new Dimension(0, 18)));
+
+        // Calculate Button
+        JButton calculateButton = new JButton("Calculate");
+        calculateButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        calculateButton.setBackground(new Color(37, 99, 235));
+        calculateButton.setForeground(Color.WHITE);
+        calculateButton.setFocusPainted(false);
+        calculateButton.setBorderPainted(false);
+        calculateButton.setOpaque(true);
+        calculateButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
+        calculateButton.setPreferredSize(new Dimension(380, 46));
+        calculateButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        calculateButton.addActionListener(this::calculateTip);
+        bodyPanel.add(calculateButton);
+        bodyPanel.add(Box.createRigidArea(new Dimension(0, 16)));
+
+        // Results Box
+        JPanel resultsPanel = new JPanel();
+        resultsPanel.setLayout(new BoxLayout(resultsPanel, BoxLayout.Y_AXIS));
+        resultsPanel.setBackground(new Color(239, 246, 255));
+        resultsPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(191, 219, 254), 1, true),
+                new EmptyBorder(14, 16, 14, 16)
+        ));
+        resultsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
+
+        tipResult = new JLabel("Tip: \u20B9150.00");
+        tipResult.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        tipResult.setForeground(new Color(29, 78, 216));
+
+        totalResult = new JLabel("Total bill: \u20B91150.00");
+        totalResult.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        totalResult.setForeground(new Color(30, 58, 138));
+
+        perPersonResult = new JLabel("Each person pays: \u20B9575.00");
+        perPersonResult.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        perPersonResult.setForeground(new Color(30, 58, 138));
+
+        resultsPanel.add(tipResult);
+        resultsPanel.add(Box.createRigidArea(new Dimension(0, 6)));
+        resultsPanel.add(totalResult);
+        resultsPanel.add(Box.createRigidArea(new Dimension(0, 6)));
+        resultsPanel.add(perPersonResult);
+
+        bodyPanel.add(resultsPanel);
+        bodyPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+
+        // Message Label
+        messageLabel = new JLabel(" ");
+        messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        messageLabel.setForeground(new Color(220, 38, 38));
+        messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        bodyPanel.add(messageLabel);
+
+        add(bodyPanel, BorderLayout.CENTER);
+    }
+
+    private JLabel createFieldLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        label.setForeground(new Color(30, 41, 59));
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return label;
+    }
+
+    private void styleTextField(JTextField field) {
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        field.setPreferredSize(new Dimension(380, 40));
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(203, 213, 225), 1),
+                new EmptyBorder(6, 12, 6, 12)
+        ));
+    }
+
+    private void calculateTip(ActionEvent e) {
+        try {
+            String billStr = billField.getText().trim();
+            String peopleStr = peopleField.getText().trim();
+
+            if (billStr.isEmpty() || peopleStr.isEmpty()) {
+                messageLabel.setText("Please fill out both bill amount and people count.");
+                return;
+            }
+
+            double bill = Double.parseDouble(billStr);
+            int people = Integer.parseInt(peopleStr);
+
+            if (bill < 0 || people < 1) {
+                messageLabel.setText("Bill must be \u2265 0 and people count \u2265 1.");
+                return;
+            }
+
+            String tipStr = (String) tipCombo.getSelectedItem();
+            int percentage = Integer.parseInt(tipStr.replace("%", "").trim());
+
+            double tip = bill * percentage / 100.0;
+            double total = bill + tip;
+            double perPerson = total / people;
+
+            tipResult.setText(String.format("Tip: \u20B9%.2f", tip));
+            totalResult.setText(String.format("Total bill: \u20B9%.2f", total));
+            perPersonResult.setText(String.format("Each person pays: \u20B9%.2f", perPerson));
+            messageLabel.setText(" ");
+        } catch (NumberFormatException ex) {
+            messageLabel.setText("Please enter valid numeric values.");
+        }
+    }
+
+    public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ignored) {}
+
+        SwingUtilities.invokeLater(() -> {
+            new TipCalculatorSwingApp().setVisible(true);
+        });
+    }
+}
+
+
+
+================================================================================
+FILE 7 / 7: run.bat
+================================================================================
+@echo off
+setlocal
+title Tip Calculator Launcher
+echo ===================================================
+echo           TIP CALCULATOR - RUNNABLE LAUNCHER
+echo ===================================================
+echo.
+
+where java >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERROR] Java was not found in your system PATH!
+    echo Please install Java 17+ or Java 24 to run this application.
+    echo Download: https://adoptium.net/
+    echo.
+    pause
+    exit /b 1
+)
+
+echo Starting Tip Calculator (JavaFX)...
+java --module-path lib --add-modules javafx.controls,javafx.fxml -jar TipCalculator.jar
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [INFO] JavaFX launcher exited or encountered an environment constraint.
+    echo [INFO] Launching Universal Java GUI (Swing fallback)...
+    echo.
+    java -cp TipCalculator.jar tipcalculator.TipCalculatorSwingApp
+    if %ERRORLEVEL% NEQ 0 (
+        echo.
+        echo [ERROR] Application failed to start.
+        pause
+    )
+)
+
+
+================================================================================
+END OF COMBINED FILE
+================================================================================
